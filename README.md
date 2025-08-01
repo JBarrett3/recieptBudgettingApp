@@ -79,25 +79,6 @@ An app that allows users to track spending through **receipt uploads** and **man
 
 ---
 
-## 📋 Tasks (To Do List)
-
-### 🔨 Setup & Research
-
-- [ ]  Create GitHub repo + initialize `README.md`
-- [ ]  Research Fastify and Postgres
-- [ ]  Set up Fastify backend (local)
-- [ ]  Research React frontend basics
-- [ ]  Build simple React UI
-- [ ]  Connect backend and frontend
-
-### 🐳 Dockerization
-
-- [ ]  Learn Docker + Docker Compose
-- [ ]  Add Dockerfile and `docker-compose.yml`
-- [ ]  Test local containerized stack
-
----
-
 ## 📐 Architecture
 
 - [Architecture diagram (draw.io)](https://app.diagrams.net/#G1vJoh44eiBeqn5U0365Hl4WR4_TItBykv#%7B%22pageId%22%3A%22NWgJDvCX8ibC3eIbreF3%22%7D)
