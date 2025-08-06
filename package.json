@@ -1,0 +1,25 @@
+{
+  "name": "recieptbudgettingapp",
+  "version": "1.0.0",
+  "description": "Most budget apps track spending via credit card integrations and fail to capture **cash transactions**, despite their continued importance (e.g., small merchants, fare discounts). There's a need for a user-friendly app that can track **cash expenses via receipt OCR or manual entry**.",
+  "homepage": "https://github.com/JBarrett3/recieptBudgettingApp",
+  "main": "src/server.js",
+  "scripts": {
+    "start": "node src/server",
+    "dev": "nodemon src/server",
+    "test": "vitest"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "fastify": "^5.4.0",
+    "fastify-swagger": "^5.2.0"
+  },
+  "devDependencies": {
+    "nodemon": "^3.1.10",
+    "pino-pretty": "^13.1.1",
+    "vitest": "^3.2.4"
+  },
+  "type": "module"
+}
