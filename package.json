@@ -7,14 +7,19 @@
   "scripts": {
     "start": "node src/server",
     "dev": "nodemon src/server",
-    "test": "vitest"
+    "test": "vitest",
+    "gen_prod_DB": "node utils/genProdDB.js",
+    "gen_dev_DB": "node utils/genDevDB.js"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
   "dependencies": {
+    "@fastify/postgres": "^6.0.2",
+    "dotenv": "^17.2.1",
     "fastify": "^5.4.0",
-    "fastify-swagger": "^5.2.0"
+    "fastify-swagger": "^5.2.0",
+    "pg": "^8.16.3"
   },
   "devDependencies": {
     "nodemon": "^3.1.10",

@@ -1,30 +1,32 @@
 import { buildFastifyInst } from '../src/server'
-import { describe, test, expect, vi, beforeEach } from 'vitest';
+import { describe, test, expect, vi, beforeEach, afterEach } from 'vitest';
+const DEV_DB = "None" // not even used here
+
+let fastify;
+beforeEach(async () => {
+    fastify = buildFastifyInst({ DB_NAME: DEV_DB });
+    await fastify.ready();
+});
+afterEach(async () => {
+    await fastify?.close();
+});
 
 // CREATE
 describe("Create User", () => {
-    let mockedDbInterface;
-    beforeEach(() => {
-        mockedDbInterface = {
-            user: {
-                createInDB: vi.fn()
-            }
-        };
-    });
-    
     test("Success", async () => {
-        // prep mocked DB
-        mockedDbInterface.user.createInDB.mockResolvedValue({
-            error: null,
-            dbResp: {
-                uid: 1,
-                name: "John Doe",
-                email: "John.doe@gmail.com",
-                password: "JohnLikesCats123"
+        fastify.db = {
+            user: {
+                createInDB: vi.fn().mockResolvedValue({
+                    error: null,
+                    dbResp: {
+                        uid: 1,
+                        name: "John Doe",
+                        email: "John.doe@gmail.com",
+                        password: "JohnLikesCats123"
+                    }
+                })
             }
-        });
-        const fastify = await buildFastifyInst(mockedDbInterface);
-        // send simulated user input
+        }
         const response = await fastify.inject({
             method: 'POST',
             url: "/user",
@@ -37,7 +39,6 @@ describe("Create User", () => {
             'Content-Type': 'application/json'
             }
         })
-        // confirm expected application output
         expect(JSON.parse(response.body)).toStrictEqual({
             uid: 1,
             name: "John Doe",
@@ -48,7 +49,6 @@ describe("Create User", () => {
     });
 
     test("Unsuccessful due to missing name", async () => {
-        const fastify = buildFastifyInst(mockedDbInterface);
         const response = await fastify.inject({
             method: 'POST',
             url: "/user",
@@ -65,7 +65,6 @@ describe("Create User", () => {
     });
 
     test("Unsuccessful due to missing email", async () => {
-        const fastify = buildFastifyInst(mockedDbInterface);
         const response = await fastify.inject({
             method: 'POST',
             url: "/user",
@@ -82,7 +81,6 @@ describe("Create User", () => {
     });
 
     test("Unsuccessful due to missing password", async () => {
-        const fastify = buildFastifyInst(mockedDbInterface);
         const response = await fastify.inject({
             method: 'POST',
             url: "/user",
@@ -103,24 +101,17 @@ describe("Create User", () => {
 
 // GET
 describe("Get User", () => {
-    let mockedDbInterface;
-    beforeEach(() => {
-        mockedDbInterface = {
-            user: {
-                readInDB: vi.fn()
-            }
-        };
-    });
     test("Successful by UID", async () => {
-        // prep mocked DB
-        mockedDbInterface.user.readInDB.mockResolvedValue({error: null, dbResp:[{
-            uid: 1,
-            name: "John Doe",
-            email: "John.doe@gmail.com",
-            password: "JohnLikesCats123"
-        }]});
-        const fastify = buildFastifyInst(mockedDbInterface);
-        // send simulated user input
+        fastify.db = {
+            user: {
+                readInDB: vi.fn().mockResolvedValue({error: null, dbResp:[{
+                    uid: 1,
+                    name: "John Doe",
+                    email: "John.doe@gmail.com",
+                    password: "JohnLikesCats123"
+                }]})
+            }
+        }
         const response = await fastify.inject({
             method: 'GET',
             url: "/user?uid=1",
@@ -128,7 +119,6 @@ describe("Get User", () => {
             'Content-Type': 'application/json'
             }
         })
-        // confirm expected application output
         expect(JSON.parse(response.body)).toStrictEqual([{
             uid: 1,
             name: "John Doe",
@@ -139,15 +129,15 @@ describe("Get User", () => {
     })
 
     test("Successful by email", async () => {
-        // prep mocked DB
-        mockedDbInterface.user.readInDB.mockResolvedValue({error: null, dbResp: [{
-            uid: 1,
-            name: "John Doe",
-            email: "John.doe@gmail.com",
-            password: "JohnLikesCats123"
-        }]});
-        const fastify = buildFastifyInst(mockedDbInterface);
-        // send simulated user input
+        fastify.db = {
+            user: {
+                readInDB: vi.fn().mockResolvedValue(({error: null, dbResp: [{
+                uid: 1,
+                name: "John Doe",
+                email: "John.doe@gmail.com",
+                password: "JohnLikesCats123"
+            }]
+        }))}};
         const response = await fastify.inject({
             method: 'GET',
             url: "/user?email=John.doe@gmail.com",
@@ -155,7 +145,6 @@ describe("Get User", () => {
             'Content-Type': 'application/json'
             }
         })
-        // confirm expected application output
         expect(JSON.parse(response.body)).toStrictEqual([{
             uid: 1,
             name: "John Doe",
@@ -166,8 +155,6 @@ describe("Get User", () => {
     })
 
     test("Unsuccessful (insufficient keys)", async () => {
-        const fastify = buildFastifyInst(mockedDbInterface);
-        // send simulated user input
         const response = await fastify.inject({
             method: 'GET',
             url: "/user",
@@ -175,21 +162,21 @@ describe("Get User", () => {
             'Content-Type': 'application/json'
             }
         })
-        // confirm expected application output
         expect(JSON.parse(response.body)).toStrictEqual({error: "insufficient keys, provide either UID or email"})
         expect(response.statusCode).toBe(400)
     })
 
     test("Successful (matching redundant keys)", async () => {
-        // prep mocked DB
-        mockedDbInterface.user.readInDB.mockResolvedValue({error: null, dbResp: [{
-            uid: 1,
-            name: "John Doe",
-            email: "John.doe@gmail.com",
-            password: "JohnLikesCats123"
-        }]});
-        const fastify = buildFastifyInst(mockedDbInterface);
-        // send simulated user input
+        fastify.db = {
+            user: {
+                readInDB: vi.fn().mockResolvedValue({error: null, dbResp: [{
+                    uid: 1,
+                    name: "John Doe",
+                    email: "John.doe@gmail.com",
+                    password: "JohnLikesCats123"
+                }]})
+            }
+        };
         const response = await fastify.inject({
             method: 'GET',
             url: "/user?uid=1&email=John.doe@gmail.com&password=JohnLikesCats123",
@@ -197,7 +184,6 @@ describe("Get User", () => {
             'Content-Type': 'application/json'
             }
         })
-        // confirm expected application output
         expect(JSON.parse(response.body)).toStrictEqual([{
             uid: 1,
             name: "John Doe",
@@ -208,20 +194,21 @@ describe("Get User", () => {
     })
 
     test("Unsuccessful (conflicting redundant keys)", async () => {
-        // prep mocked DB
-        mockedDbInterface.user.readInDB.mockResolvedValue({error: null, dbResp: {
-            uid: 1,
-            name: "John Doe",
-            email: "John.doe@gmail.com",
-            password: "JohnLikesCats123"
-        }}).mockResolvedValueOnce({
-            uid: 5,
-            name: "Jane Doe",
-            email: "Jane.doe@gmail.com",
-            password: "JaneLikesDogs123"
-        });
-        const fastify = buildFastifyInst(mockedDbInterface);
-        // send simulated user input
+        fastify.db = {
+            user: {
+                readInDB: vi.fn().mockResolvedValueOnce({error: null, dbResp: {
+                    uid: 1,
+                    name: "John Doe",
+                    email: "John.doe@gmail.com",
+                    password: "JohnLikesCats123"
+                }}).mockResolvedValueOnce({
+                    uid: 5,
+                    name: "Jane Doe",
+                    email: "Jane.doe@gmail.com",
+                    password: "JaneLikesDogs123"
+                })
+            }
+        }
         const response = await fastify.inject({
             method: 'GET',
             url: "/user?uid=1&email=Jane.doe@gmail.com",
@@ -229,7 +216,6 @@ describe("Get User", () => {
             'Content-Type': 'application/json'
             }
         })
-        // confirm expected application output
         expect(JSON.parse(response.body)).toStrictEqual({error: "conflicting redundant keys"})
         expect(response.statusCode).toBe(400)
     })
@@ -237,24 +223,15 @@ describe("Get User", () => {
 
 // UPDATE
 describe("Update User", () => {
-    let mockedDbInterface;
-    beforeEach(() => {
-        mockedDbInterface = {
-            user: {
-                updateInDB: vi.fn()
-            }
-        };
-    });
     test("Success", async () => {
-        // prep mocked DB
-        mockedDbInterface.user.updateInDB.mockResolvedValue({error: null, dbResp: {
-            uid: 1,
-            name: "John Doe",
-            email: "John.doe@gmail.com",
-            password: "JohnLikesCats123"
-        }});
-        const fastify = buildFastifyInst(mockedDbInterface);
-        // send simulated user input
+        fastify.db = {
+            user: {
+                updateInDB: vi.fn().mockResolvedValue({error: null, dbResp: {
+                    uid: 1,
+                    name: "John Doe",
+                    email: "John.doe@gmail.com",
+                    password: "JohnLikesCats123"
+        }})}};
         const response = await fastify.inject({
             method: 'PUT',
             url: "/user",
@@ -268,7 +245,6 @@ describe("Update User", () => {
             'Content-Type': 'application/json'
             }
         })
-        // confirm expected application output
         expect(JSON.parse(response.body)).toStrictEqual({
             uid: 1,
             name: "John Doe",
@@ -279,7 +255,6 @@ describe("Update User", () => {
     });
 
     test("Unsuccessful due to missing UID", async () => {
-        const fastify = buildFastifyInst(mockedDbInterface);
         const response = await fastify.inject({
             method: 'PUT',
             url: "/user",
@@ -299,24 +274,17 @@ describe("Update User", () => {
 
 // DELETE
 describe("Delete User", () => {
-    let mockedDbInterface;
-    beforeEach(() => {
-        mockedDbInterface = {
-            user: {
-                deleteInDB: vi.fn()
-            }
-        };
-    });
     test("Success", async () => {
-        // prep mocked DB
-        mockedDbInterface.user.deleteInDB.mockResolvedValue({error: null, dbResp: {
-            uid: 1,
-            name: "John Doe",
-            email: "John.doe@gmail.com",
-            password: "JohnLikesCats123"
-        }});
-        const fastify = buildFastifyInst(mockedDbInterface);
-        // send simulated user input
+        fastify.db = {
+            user: {
+                deleteInDB: vi.fn().mockResolvedValue({error: null, dbResp: {
+                    uid: 1,
+                    name: "John Doe",
+                    email: "John.doe@gmail.com",
+                    password: "JohnLikesCats123"
+                }})
+            }
+        }
         const response = await fastify.inject({
             method: 'DELETE',
             url: "/user",
@@ -330,7 +298,6 @@ describe("Delete User", () => {
             'Content-Type': 'application/json'
             }
         })
-        // confirm expected application output
         expect(JSON.parse(response.body)).toStrictEqual({
             uid: 1,
             name: "John Doe",
@@ -341,7 +308,6 @@ describe("Delete User", () => {
     });
 
     test("Unsuccessful due to missing UID", async () => {
-        const fastify = buildFastifyInst(mockedDbInterface);
         const response = await fastify.inject({
             method: 'DELETE',
             url: "/user",

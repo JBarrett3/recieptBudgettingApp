@@ -1,30 +1,32 @@
 import { buildFastifyInst } from '../src/server'
-import { describe, test, expect, vi, beforeEach } from 'vitest';
+import { describe, test, expect, vi, beforeEach, afterEach } from 'vitest';
+const DEV_DB = "None" // not even used here
+
+let fastify;
+beforeEach(async () => {
+    fastify = buildFastifyInst({ DB_NAME: DEV_DB });
+    await fastify.ready();
+});
+afterEach(async () => {
+    await fastify?.close();
+});
 
 // CREATE
 describe("Create Transaction", () => {
-    let mockedDbInterface;
-    beforeEach(() => {
-        mockedDbInterface = {
-            transaction: {
-                createInDB: vi.fn()
-            }
-        };
-    });
-    
     test("Success", async () => {
-        // prep mocked DB
-        mockedDbInterface.transaction.createInDB.mockResolvedValue({
-            error: null,
-            dbResp: {
-                tid: 1,
-                uid: 1,
-                amount: 20,
-                description: "desc",
+        fastify.db = {
+            transaction: {
+                createInDB: vi.fn().mockResolvedValue({
+                    error: null,
+                    dbResp: {
+                        tid: 1,
+                        uid: 1,
+                        amount: 20,
+                        description: "desc",
+                    }
+                })
             }
-        });
-        const fastify = await buildFastifyInst(mockedDbInterface);
-        // send simulated user input
+        }
         const response = await fastify.inject({
             method: 'POST',
             url: "/transaction",
@@ -37,7 +39,6 @@ describe("Create Transaction", () => {
             'Content-Type': 'application/json'
             }
         })
-        // confirm expected application output
         expect(JSON.parse(response.body)).toStrictEqual({
                 tid: 1,
                 uid: 1,
@@ -48,7 +49,6 @@ describe("Create Transaction", () => {
     });
 
     test("Unsuccessful due to missing UID", async () => {
-        const fastify = buildFastifyInst(mockedDbInterface);
         const response = await fastify.inject({
             method: 'POST',
             url: "/transaction",
@@ -65,7 +65,6 @@ describe("Create Transaction", () => {
     });
 
     test("Unsuccessful due to missing amount", async () => {
-        const fastify = buildFastifyInst(mockedDbInterface);
         const response = await fastify.inject({
             method: 'POST',
             url: "/transaction",
@@ -86,28 +85,20 @@ describe("Create Transaction", () => {
 
 // GET
 describe("Read Transaction", () => {
-    let mockedDbInterface;
-    beforeEach(() => {
-        mockedDbInterface = {
-            transaction: {
-                readInDB: vi.fn()
-            }
-        };
-    });
-    
     test("Success by TID", async () => {
-        // prep mocked DB
-        mockedDbInterface.transaction.readInDB.mockResolvedValue({
-            error: null,
-            dbResp: [{
-                tid: 1,
-                uid: 1,
-                amount: 20,
-                description: "desc",
-            }]
-        });
-        const fastify = await buildFastifyInst(mockedDbInterface);
-        // send simulated user input
+        fastify.db = {
+            transaction: {
+                readInDB: vi.fn().mockResolvedValue({
+                    error: null,
+                    dbResp: [{
+                        tid: 1,
+                        uid: 1,
+                        amount: 20,
+                        description: "desc",
+                    }]
+                })
+            }
+        }
         const response = await fastify.inject({
             method: 'GET',
             url: "/transaction?tid=1",
@@ -115,7 +106,6 @@ describe("Read Transaction", () => {
             'Content-Type': 'application/json'
             }
         })
-        // confirm expected application output
         expect(JSON.parse(response.body)).toStrictEqual([{
                 tid: 1,
                 uid: 1,
@@ -126,28 +116,29 @@ describe("Read Transaction", () => {
     });
 
     test("Success by UID", async () => {
-        // prep mocked DB
-        mockedDbInterface.transaction.readInDB.mockResolvedValue({
-            error: null,
-            dbResp: [{
-                tid: 1,
-                uid: 1,
-                amount: 20,
-                description: "desc",
-            },{
-                tid: 2,
-                uid: 1,
-                amount: 20,
-                description: "desc",
-            },{
-                tid: 3,
-                uid: 1,
-                amount: 20,
-                description: "desc",
-            }]
-        });
-        const fastify = await buildFastifyInst(mockedDbInterface);
-        // send simulated user input
+        fastify.db = {
+            transaction: {
+                readInDB: vi.fn().mockResolvedValue({
+                    error: null,
+                    dbResp: [{
+                        tid: 1,
+                        uid: 1,
+                        amount: 20,
+                        description: "desc",
+                    },{
+                        tid: 2,
+                        uid: 1,
+                        amount: 20,
+                        description: "desc",
+                    },{
+                        tid: 3,
+                        uid: 1,
+                        amount: 20,
+                        description: "desc",
+                    }]
+                })
+            }
+        }
         const response = await fastify.inject({
             method: 'GET',
             url: "/transaction?uid=1",
@@ -155,7 +146,6 @@ describe("Read Transaction", () => {
             'Content-Type': 'application/json'
             }
         })
-        // confirm expected application output
         expect(JSON.parse(response.body)).toStrictEqual([{
                 tid: 1,
                 uid: 1,
@@ -176,18 +166,19 @@ describe("Read Transaction", () => {
     });
 
     test("Success by UID and TID", async () => {
-        // prep mocked DB
-        mockedDbInterface.transaction.readInDB.mockResolvedValue({
-            error: null,
-            dbResp: [{
-                tid: 1,
-                uid: 1,
-                amount: 20,
-                description: "desc",
-            }]
-        });
-        const fastify = await buildFastifyInst(mockedDbInterface);
-        // send simulated user input
+        fastify.db = {
+            transaction: {
+                readInDB: vi.fn().mockResolvedValue({
+                    error: null,
+                    dbResp: [{
+                        tid: 1,
+                        uid: 1,
+                        amount: 20,
+                        description: "desc",
+                    }]
+                })
+            }
+        };
         const response = await fastify.inject({
             method: 'GET',
             url: "/transaction?tid=1&uid=1",
@@ -195,7 +186,6 @@ describe("Read Transaction", () => {
             'Content-Type': 'application/json'
             }
         })
-        // confirm expected application output
         expect(JSON.parse(response.body)).toStrictEqual([{
                 tid: 1,
                 uid: 1,
@@ -206,9 +196,6 @@ describe("Read Transaction", () => {
     });
 
     test("Unsuccessful due to insufficient keys", async () => {
-        // prep mocked DB
-        const fastify = await buildFastifyInst(mockedDbInterface);
-        // send simulated user input
         const response = await fastify.inject({
             method: 'GET',
             url: "/transaction",
@@ -216,7 +203,6 @@ describe("Read Transaction", () => {
             'Content-Type': 'application/json'
             }
         })
-        // confirm expected application output
         expect(JSON.parse(response.body)).toStrictEqual({error: "insufficient keys, provide either UID or TID"})
         expect(response.statusCode).toBe(400)
     });
@@ -226,24 +212,17 @@ describe("Read Transaction", () => {
 
 // UPDATE
 describe("Update Transaction", () => {
-    let mockedDbInterface;
-    beforeEach(() => {
-        mockedDbInterface = {
-            transaction: {
-                updateInDB: vi.fn()
-            }
-        };
-    });
     test("Success", async () => {
-        // prep mocked DB
-        mockedDbInterface.transaction.updateInDB.mockResolvedValue({error: null, dbResp: {
-            tid: 1,
-            uid: 1,
-            amount: 20,
-            description: "desc"
-        }});
-        const fastify = buildFastifyInst(mockedDbInterface);
-        // send simulated user input
+        fastify.db = {
+            transaction: {
+                updateInDB: vi.fn().mockResolvedValue({error: null, dbResp: {
+                    tid: 1,
+                    uid: 1,
+                    amount: 20,
+                    description: "desc"
+                }
+            })
+        }}
         const response = await fastify.inject({
             method: 'PUT',
             url: "/transaction",
@@ -256,7 +235,6 @@ describe("Update Transaction", () => {
             'Content-Type': 'application/json'
             }
         })
-        // confirm expected application output
         expect(JSON.parse(response.body)).toStrictEqual({
             tid: 1,
             uid: 1,
@@ -267,7 +245,6 @@ describe("Update Transaction", () => {
     });
 
     test("Unsuccessful due to missing TID", async () => {
-        const fastify = buildFastifyInst(mockedDbInterface);
         const response = await fastify.inject({
             method: 'PUT',
             url: "/transaction",
@@ -286,24 +263,17 @@ describe("Update Transaction", () => {
 
 // DELETE
 describe("Delete Transaction", () => {
-    let mockedDbInterface;
-    beforeEach(() => {
-        mockedDbInterface = {
-            transaction: {
-                deleteInDB: vi.fn()
-            }
-        };
-    });
     test("Success", async () => {
-        // prep mocked DB
-        mockedDbInterface.transaction.deleteInDB.mockResolvedValue({error: null, dbResp: {
-            tid: 1,
-            uid: 1,
-            amount: 20,
-            description: "desc"
-        }});
-        const fastify = buildFastifyInst(mockedDbInterface);
-        // send simulated user input
+        fastify.db = {
+            transaction: {
+                deleteInDB: vi.fn().mockResolvedValue({error: null, dbResp: {
+                    tid: 1,
+                    uid: 1,
+                    amount: 20,
+                    description: "desc"
+                }
+            })
+        }}
         const response = await fastify.inject({
             method: 'DELETE',
             url: "/transaction",
@@ -316,7 +286,6 @@ describe("Delete Transaction", () => {
             'Content-Type': 'application/json'
             }
         })
-        // confirm expected application output
         expect(JSON.parse(response.body)).toStrictEqual({
             tid: 1,
             uid: 1,
@@ -327,7 +296,6 @@ describe("Delete Transaction", () => {
     });
 
     test("Unsuccessful due to missing TID", async () => {
-        const fastify = buildFastifyInst(mockedDbInterface);
         const response = await fastify.inject({
             method: 'DELETE',
             url: "/transaction",
